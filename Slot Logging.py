@@ -117,7 +117,7 @@ while True:
     
         # Difference 
         expected = prev_balance - bet + win
-        diff = final_credit - expected
+        diff = expected - final_credit
 
         # Status
         if  abs(diff) <= tolerance:
