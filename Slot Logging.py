@@ -1,0 +1,154 @@
+import pyautogui
+from PIL import Image, ImageOps, ImageEnhance
+import pytesseract
+import openpyxl
+from datetime import datetime
+import time
+
+# Tesseract exe locaiton
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
+# Excel File named
+excel_file = "Slot_result.xlsx"
+
+# Image area numbers
+total_credit_area = (176, 966, 479, 1004)
+total_win_area = (705, 966, 779, 1004)
+total_bet_area = (1164, 966, 1227, 1004)
+
+# Preprocessing 
+def preprocessing(img):
+    img = ImageOps.grayscale(img)
+    img = ImageEnhance.Contrast(img).enhance(2.0)
+    img = img.point(lambda x:0 if x < 128 else 255, '1')
+    return img
+
+
+# Helper function
+def extract_the_numbers (img):
+    """
+    Extract integer number from image using OCR
+    """
+    text = pytesseract.image_to_string(
+        img,
+        config = '--psm 7 -c tessedit_char_whitelist=0123456789.,'
+    ).strip()
+    cleaned_text = ''.join(filter(str.isdigit,text))
+    if not cleaned_text:
+        return 0
+    return int(cleaned_text)
+
+# Capture images
+def capture_credit():
+    screenshot = pyautogui.screenshot()
+    credit_img = preprocessing(screenshot.crop(total_credit_area))
+    return extract_the_numbers(credit_img)
+
+def capture_bet_win():
+    screenshot = pyautogui.screenshot()
+
+    bet_img = preprocessing(screenshot.crop(total_bet_area))
+    win_img = preprocessing(screenshot.crop(total_win_area))
+
+    bet = extract_the_numbers(bet_img)
+    win = extract_the_numbers(win_img)
+
+    return bet, win
+
+# Delay for balance changes for animation
+def stable_balance (capture_func, check_delay =0.3, stable_count = 3):
+    last_value = capture_func()
+    stable_time = 0
+
+    while stable_time < stable_count:
+        time.sleep(check_delay)
+        new_value = capture_func()
+
+        if new_value == last_value:
+            stable_time += 1
+        else:
+            stable_time = 0
+            last_value = new_value
+    return last_value
+
+
+# Excel format
+try:
+    wb = openpyxl.load_workbook(excel_file)
+    ws = wb.active
+except FileNotFoundError:
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(["Game", "Prev Balance", "Bet", "Total Win", "Expected Balance",
+            "Actual Balance", "Difference", "Status", "Timestamp"])
+    wb.save(excel_file)
+    ws = wb.active
+
+
+# game number (auto increment) function
+def next_game ():
+    if ws.max_row < 2 : 
+        return 1
+    return ws.cell(row=ws.max_row, column = 1).value + 1
+ 
+
+# Main Loop
+print ("Starting the slot logging capture.... Press Ctrl+C to stop")
+prev_balance = None
+last_logged_balance = None
+tolerance = 2
+
+while True:
+    current_credit = capture_credit()
+
+    if prev_balance is None:
+        prev_balance = current_credit
+        last_logged_balance = current_credit
+        print (f"Previous Balance : {prev_balance}")
+        time.sleep(1)
+        continue
+    
+    if current_credit != last_logged_balance and current_credit != 0:
+        final_credit = stable_balance(capture_credit)
+        bet, win = capture_bet_win()
+
+         # Game number
+        game = next_game()
+    
+        # Difference 
+        expected = prev_balance - bet + win
+        diff = final_credit - expected
+
+        # Status
+        if  abs(diff) <= tolerance:
+            status ="OK"
+            diff = 0
+        else:
+            status = "Incorrect"
+
+        # Convert None to 0 / 0 is mean value is empty
+        bet = bet if bet is not None else 0
+        win = win if win is not None else 0
+        final_credit = final_credit if final_credit is not None else 0
+
+        # Append to Excel
+        ws.append([
+            game,
+            prev_balance,
+            bet,
+            win,
+            expected,
+            final_credit,
+            diff,
+            status,
+            datetime.now()
+        ])
+        wb.save(excel_file)
+
+        print(f"Game {game} | Prev: {prev_balance} | Bet: {bet} | Win: {win} | "
+            f"Expected Balance : {expected} | Actual Balance : {final_credit} | Difference : {diff} | Status: {status}")
+        
+        prev_balance = final_credit
+        last_logged_balance = final_credit
+
+    time.sleep(1)
