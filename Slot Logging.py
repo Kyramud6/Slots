@@ -15,7 +15,7 @@ excel_file = "Slot_result.xlsx"
 total_credit_area = (176, 966, 479, 1004)
 total_win_area = (705, 966, 779, 1004)
 total_bet_area = (1164, 966, 1227, 1004)
-jackpot_area = (183, 770, 300, 785)
+jackpot_area = (183, 770, 300, 785) # This
 
 # Preprocessing 
 def preprocessing(img):
