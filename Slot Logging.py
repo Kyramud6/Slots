@@ -111,6 +111,8 @@ while True:
     if current_credit != last_logged_balance and current_credit != 0:
         final_credit = stable_balance(capture_credit)
         bet, win = capture_bet_win()
+        if final_credit == last_logged_balance:
+            continue
 
          # Game number
         game = next_game()
