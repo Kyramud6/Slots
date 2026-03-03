@@ -16,6 +16,12 @@ total_credit_area = (176, 966, 479, 1004)
 total_win_area = (702, 966, 800, 1004)
 total_bet_area = (1164, 966, 1227, 1004)
 
+# Auto click coordinates
+spin_button = (1611, 978)
+continue_button = (957, 879)
+up_wager = (1365, 984)
+down_wager = (1023, 984)
+
 # Preprocessing 
 def preprocessing(img):
     img = ImageOps.grayscale(img)
@@ -91,6 +97,11 @@ def next_game ():
         return 1
     return ws.cell(row=ws.max_row, column = 1).value + 1
  
+# Spin counter
+spin_counter = 0
+action_delay = 8 # Delay timer between each auto clicker action
+bet_step = 0 # Counter for the clicker to go for bet adjustment
+
 
 # Main Loop
 print ("Starting the slot logging capture.... Press Ctrl+C to stop")
@@ -99,6 +110,33 @@ last_logged_balance = None
 tolerance = 2
 
 while True:
+    spin_counter += 1
+
+    # Adjust the bet 
+    if spin_counter % 30 == 1:  # every 30 spins, first spin triggers adjustment
+        if bet_step == 0 or bet_step == 1:
+            pyautogui.moveTo(up_wager)
+            pyautogui.click()
+            print(f"Spin {spin_counter}: Up Bet")
+        elif bet_step == 2 or bet_step == 3:
+            pyautogui.moveTo(down_wager)
+            pyautogui.click()
+            print(f"Spin {spin_counter}: Down Bet")
+        time.sleep(action_delay)
+
+    pyautogui.moveTo(spin_button)
+    pyautogui.click()
+    print(f"Spin {spin_counter}: Spinz za wheel")
+    time.sleep(action_delay)
+
+    pyautogui.moveTo(continue_button)
+    pyautogui.click()
+    print(f"Spin {spin_counter}: Continued")
+    time.sleep(action_delay)
+
+    if spin_counter % 30 == 0:
+        bet_step = (bet_step + 1) % 4
+
     current_credit = capture_credit()
 
     if prev_balance is None:
