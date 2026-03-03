@@ -15,6 +15,7 @@ excel_file = "Slot_result.xlsx"
 total_credit_area = (176, 966, 479, 1004)
 total_win_area = (705, 966, 779, 1004)
 total_bet_area = (1164, 966, 1227, 1004)
+jackpot_area = (183, 770, 300, 785)
 
 # Preprocessing 
 def preprocessing(img):
@@ -54,6 +55,24 @@ def capture_bet_win():
     win = extract_the_numbers(win_img)
 
     return bet, win
+
+# Minigame (Jackpot) detection
+def jackpot_mode():
+    screenshot = pyautogui.screenshot()
+    img = screenshot.crop(jackpot_area)
+
+  
+
+    pixels = list(img.getdata())
+    avg_r = sum(p[0] for p in pixels) / len(pixels)
+    avg_g = sum(p[1] for p in pixels) / len(pixels)
+    avg_b = sum(p[2] for p in pixels) / len(pixels)
+
+    if avg_r > 180 and avg_g > 150 and avg_b < 120:
+        return True
+    else:
+        return False
+
 
 # Delay for balance changes for animation
 def stable_balance (capture_func, check_delay =0.3, stable_count = 3):
@@ -111,6 +130,16 @@ while True:
     if current_credit != last_logged_balance and current_credit != 0:
         final_credit = stable_balance(capture_credit)
         bet, win = capture_bet_win()
+
+        # Jackpot mode
+        is_jackpot = jackpot_mode()
+        if  is_jackpot:
+            expected = prev_balance + win
+            mode = "Jackpot"
+        else:
+            expected = prev_balance - bet + win
+            mode = "Normal"
+        #
         if final_credit == last_logged_balance:
             continue
 
@@ -118,7 +147,6 @@ while True:
         game = next_game()
     
         # Difference 
-        expected = prev_balance - bet + win
         diff = expected - final_credit
 
         # Status
