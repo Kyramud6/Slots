@@ -13,7 +13,7 @@ excel_file = "Slot_result.xlsx"
 
 # Image area numbers
 total_credit_area = (176, 966, 479, 1004)
-total_win_area = (705, 966, 779, 1004)
+total_win_area = (699, 966, 810, 1004)
 total_bet_area = (1164, 966, 1227, 1004)
 
 # Preprocessing 
