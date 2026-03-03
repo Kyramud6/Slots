@@ -99,7 +99,7 @@ def next_game ():
  
 # Spin counter
 spin_counter = 0
-action_delay = 8 # Delay timer between each auto clicker action
+action_delay = 6.5 # Delay timer between each auto clicker action
 bet_step = 0 # Counter for the clicker to go for bet adjustment
 
 
