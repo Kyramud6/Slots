@@ -13,7 +13,7 @@ excel_file = "Slot_result.xlsx"
 
 # Image area numbers
 total_credit_area = (176, 966, 479, 1004)
-total_win_area = (702, 966, 800, 1004)
+total_win_area = (695, 966, 800, 1004)
 total_bet_area = (1164, 966, 1227, 1004)
 
 # Auto click coordinates
@@ -99,7 +99,7 @@ def next_game ():
  
 # Spin counter
 spin_counter = 0
-action_delay = 8 # Delay timer between each auto clicker action
+action_delay = 3 # Delay timer between each auto clicker action
 bet_step = 0 # Counter for the clicker to go for bet adjustment
 
 
