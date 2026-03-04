@@ -18,7 +18,7 @@ total_bet_area = (1164, 966, 1227, 1004)
 
 # Auto click coordinates
 spin_button = (1611, 978)
-continue_button = (957, 879)
+continue_button = (969, 1023)
 up_wager = (1365, 984)
 down_wager = (1023, 984)
 
@@ -99,7 +99,7 @@ def next_game ():
  
 # Spin counter
 spin_counter = -1
-action_delay = 2.5 # Delay timer between each auto clicker action
+action_delay = 3.5 # Delay timer between each auto clicker action
 bet_step = 0 # Counter for the clicker to go for bet adjustment
 
 
@@ -132,11 +132,13 @@ while spin_counter < total_run:
     pyautogui.moveTo(spin_button)
     pyautogui.click()
     print(f"Spin {spin_counter}: Spinz za wheel")
-    time.sleep(3)
+    time.sleep(6)
 
     balance_after = capture_credit()
     if balance_after < balance_before:
         current_mode = "Normal"
+    elif balance_after == balance_before:
+        current_mode = "FreeSpin"
     else:
         current_mode = "Jackpot"
 
@@ -175,8 +177,10 @@ while spin_counter < total_run:
         # Gamemode based
         if current_mode == "Normal":
             expected = prev_balance - bet + win
-        else:
+        elif current_mode == "Jackpot":
             expected = prev_balance + win
+        elif current_mode == "FreeSpin":
+            continue
 
         # Difference 
         diff = expected - final_credit
