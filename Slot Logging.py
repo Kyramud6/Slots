@@ -85,7 +85,7 @@ try:
 except FileNotFoundError:
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.append(["Game", "Prev Balance", "Bet", "Total Win", "Expected Balance",
+    ws.append(["Game No.", "Gamemode" , "Prev Balance", "Bet", "Total Win", "Expected Balance",
             "Actual Balance", "Difference", "Status", "Timestamp"])
     wb.save(excel_file)
     ws = wb.active
@@ -98,8 +98,8 @@ def next_game ():
     return ws.cell(row=ws.max_row, column = 1).value + 1
  
 # Spin counter
-spin_counter = 0
-action_delay = 3 # Delay timer between each auto clicker action
+spin_counter = -1
+action_delay = 2.5 # Delay timer between each auto clicker action
 bet_step = 0 # Counter for the clicker to go for bet adjustment
 
 
@@ -109,7 +109,10 @@ prev_balance = None
 last_logged_balance = None
 tolerance = 2
 
-while True:
+current_mode = "Normal"
+total_run = int(input("Enter number of spins you want : "))
+while spin_counter < total_run:
+
     spin_counter += 1
 
     # Adjust the bet 
@@ -124,9 +127,21 @@ while True:
             print(f"Spin {spin_counter}: Down Bet")
         time.sleep(action_delay)
 
+    balance_before = capture_credit()
+
     pyautogui.moveTo(spin_button)
     pyautogui.click()
     print(f"Spin {spin_counter}: Spinz za wheel")
+    time.sleep(3)
+
+    balance_after = capture_credit()
+    if balance_after < balance_before:
+        current_mode = "Normal"
+    else:
+        current_mode = "Jackpot"
+
+    print(f"Mode : {current_mode}")
+
     time.sleep(action_delay)
 
     pyautogui.moveTo(continue_button)
@@ -148,15 +163,22 @@ while True:
     
     if current_credit != last_logged_balance and current_credit != 0:
         final_credit = stable_balance(capture_credit)
-        bet, win = capture_bet_win()
+        
         if final_credit == last_logged_balance:
             continue
+
+        bet, win = capture_bet_win()
 
          # Game number
         game = next_game()
     
+        # Gamemode based
+        if current_mode == "Normal":
+            expected = prev_balance - bet + win
+        else:
+            expected = prev_balance + win
+
         # Difference 
-        expected = prev_balance - bet + win
         diff = expected - final_credit
 
         # Status
@@ -174,6 +196,7 @@ while True:
         # Append to Excel
         ws.append([
             game,
+            current_mode,
             prev_balance,
             bet,
             win,
@@ -185,10 +208,10 @@ while True:
         ])
         wb.save(excel_file)
 
-        print(f"Game {game} | Prev: {prev_balance} | Bet: {bet} | Win: {win} | "
+        print(f"Game {game} | Gamemode: {current_mode}: | Prev: {prev_balance} | Bet: {bet} | Win: {win} | "
             f"Expected Balance : {expected} | Actual Balance : {final_credit} | Difference : {diff} | Status: {status}")
         
         prev_balance = final_credit
         last_logged_balance = final_credit
-
+    print ("Spinning is completed.")
     time.sleep(1)
