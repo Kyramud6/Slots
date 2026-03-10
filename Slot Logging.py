@@ -3,6 +3,9 @@ from PIL import Image, ImageOps, ImageEnhance
 import pytesseract
 import openpyxl
 from datetime import datetime
+import tkinter as tk
+from tkinter import messagebox
+import random
 import time
 
 # Tesseract exe locaiton
@@ -21,12 +24,14 @@ spin_button = (1611, 978)
 continue_button = (969, 1023)
 up_wager = (1365, 984)
 down_wager = (1023, 984)
+ok_button = (795, 723)
 
 # Preprocessing 
 def preprocessing(img):
     img = ImageOps.grayscale(img)
-    img = ImageEnhance.Contrast(img).enhance(2.0)
-    img = img.point(lambda x:0 if x < 128 else 255, '1')
+    img = ImageEnhance.Sharpness(img).enhance(2.0)
+    img = ImageEnhance.Contrast(img).enhance(3.0)
+    img = img.point(lambda x:0 if x < 140 else 255, '1')
     return img
 
 
@@ -48,6 +53,15 @@ def extract_the_numbers (img):
 def capture_credit():
     screenshot = pyautogui.screenshot()
     credit_img = preprocessing(screenshot.crop(total_credit_area))
+    value1 = extract_the_numbers(credit_img)
+    time.sleep(0.1)
+    value2 = extract_the_numbers(credit_img)
+
+    if abs(value1 - value2) <= 2:
+        return value2
+    else:
+        return max(value1,value2)
+    
     return extract_the_numbers(credit_img)
 
 def capture_bet_win():
@@ -62,7 +76,7 @@ def capture_bet_win():
     return bet, win
 
 # Delay for balance changes for animation
-def stable_balance (capture_func, check_delay =0.3, stable_count = 3):
+def stable_balance (capture_func, check_delay =0.7, stable_count = 4):
     last_value = capture_func()
     stable_time = 0
 
@@ -98,9 +112,31 @@ def next_game ():
     return ws.cell(row=ws.max_row, column = 1).value + 1
  
 # Spin counter
-spin_counter = -1
-action_delay = 4.5 # Delay timer between each auto clicker action
+spin_counter = 0
+action_delay = 2 # Delay timer between each auto clicker action
 bet_step = 0 # Counter for the clicker to go for bet adjustment
+
+
+# Jackpot state
+is_jackpot = False
+jackpotbalance_before = 0
+jackpot_win = 0
+jackpot_spin =0
+
+
+# Notification once the spin is done
+def notification(spin_counter):
+    root = tk.Tk()
+    root.withdraw()
+    messagebox.showinfo("Slot Logging done", f"Spinz completed times: {spin_counter}")
+    root.destroy()
+
+
+# Wiggle mouse
+def random_wiggle_mouse():
+    x , y = pyautogui.position()
+    pyautogui.moveRel(random.randint(-20,20), random.randint(-20,20),duration=0.5)
+    pyautogui.moveTo(x,y,duration=0.5)
 
 
 # Main Loop
@@ -129,27 +165,26 @@ while spin_counter < total_run:
 
     balance_before = capture_credit()
 
-    pyautogui.moveTo(spin_button)
-    pyautogui.click()
-    print(f"Spin {spin_counter}: Spinz za wheel")
-    time.sleep(6)
 
-    balance_after = capture_credit()
-    if balance_after < balance_before:
-        current_mode = "Normal"
-    elif balance_after == balance_before:
-        current_mode = "FreeSpin"
-    else:
-        current_mode = "Jackpot"
-
-    print(f"Mode : {current_mode}")
-
+    pyautogui.moveTo(ok_button)
+    pyautogui.click(clicks=5, interval= 0.5)
+    print(f"Ok Wheelie")
     time.sleep(action_delay)
+
+    pyautogui.moveTo(spin_button)
+    pyautogui.click(clicks=2, interval=0.6)
+    print(f"Spin {spin_counter}: Spinz za wheel")
+    time.sleep(3)
+
+  
+    balance_after = capture_credit()
 
     pyautogui.moveTo(continue_button)
     pyautogui.click()
     print(f"Spin {spin_counter}: Continued")
     time.sleep(action_delay)
+
+    random_wiggle_mouse()
 
     if spin_counter % 30 == 0:
         bet_step = (bet_step + 1) % 4
@@ -168,22 +203,52 @@ while spin_counter < total_run:
         
         if final_credit == last_logged_balance:
             continue
-
+        
+        time.sleep(0.4)
         bet, win = capture_bet_win()
+        expected_normal = balance_before - bet + win 
+
 
          # Game number
         game = next_game()
+        expected = 0
+        diff = 0
+    
+        if balance_after == expected_normal and not is_jackpot:
+            current_mode = "Normal"
+        elif balance_after == balance_before: 
+            current_mode = "Jackpot"
+        else:
+            current_mode = "Error"
+
+        print(f"Mode : {current_mode}")
+
+        time.sleep(action_delay)
+
     
         # Gamemode based
-        if current_mode == "Normal":
-            expected = prev_balance - bet + win
-        elif current_mode == "Jackpot":
-            expected = prev_balance + win
-        elif current_mode == "FreeSpin":
-            continue
+        if current_mode == "Error":
+            print("Error found on spin, skip")
+        elif current_mode == "Normal":
+            expected = expected_normal
+            diff = expected - final_credit
 
-        # Difference 
+        elif current_mode == "Jackpot":
+            bet, win = capture_bet_win()
+            if not is_jackpot:
+                is_jackpot = True
+                jackpotbalance_before = balance_before
+                jackpot_win = 0
+                jackpot_spin = 0
+            jackpot_spin += 1
+            jackpot_win += win
+            expected = 0
+            diff = 0
+            final_credit = capture_credit
+            
+         # Difference 
         diff = expected - final_credit
+
 
         # Status
         if  abs(diff) <= tolerance:
@@ -218,4 +283,8 @@ while spin_counter < total_run:
         prev_balance = final_credit
         last_logged_balance = final_credit
     print ("Spinning is completed.")
-    time.sleep(1)
+
+
+  
+notification(spin_counter)    
+time.sleep(1)
