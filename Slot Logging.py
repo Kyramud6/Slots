@@ -15,7 +15,7 @@ pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tessera
 excel_file = "Slot_result.xlsx"
 
 # Image area numbers
-total_credit_area = (176, 966, 479, 1004)
+total_credit_area = (170, 966, 479, 1004)
 total_win_area = (695, 966, 800, 1004)
 total_bet_area = (1164, 966, 1227, 1004)
 
@@ -30,8 +30,8 @@ ok_button = (795, 723)
 def preprocessing(img):
     img = ImageOps.grayscale(img)
     img = ImageEnhance.Sharpness(img).enhance(2.0)
-    img = ImageEnhance.Contrast(img).enhance(3.0)
-    img = img.point(lambda x:0 if x < 140 else 255, '1')
+    img = ImageEnhance.Contrast(img).enhance(4.5)
+    img = img.point(lambda x:0 if x < 100 else 255, '1')
     return img
 
 
@@ -147,7 +147,7 @@ tolerance = 2
 
 current_mode = "Normal"
 total_run = int(input("Enter number of spins you want : "))
-while spin_counter < total_run:
+while spin_counter <=total_run:
 
     spin_counter += 1
 
@@ -214,9 +214,9 @@ while spin_counter < total_run:
         expected = 0
         diff = 0
     
-        if balance_after == expected_normal and not is_jackpot:
+        if abs(balance_after - expected_normal) <= tolerance:
             current_mode = "Normal"
-        elif balance_after == balance_before: 
+        elif abs(balance_after == balance_before) <= tolerance: 
             current_mode = "Jackpot"
         else:
             current_mode = "Error"
@@ -230,6 +230,7 @@ while spin_counter < total_run:
         if current_mode == "Error":
             print("Error found on spin, skip")
         elif current_mode == "Normal":
+            is_jackpot = False
             expected = expected_normal
             diff = expected - final_credit
 
@@ -241,13 +242,10 @@ while spin_counter < total_run:
                 jackpot_win = 0
                 jackpot_spin = 0
             jackpot_spin += 1
-            jackpot_win += win
+            jackpot_win = win
             expected = 0
             diff = 0
-            final_credit = capture_credit
-            
-         # Difference 
-        diff = expected - final_credit
+            final_credit = capture_credit()
 
 
         # Status
@@ -286,5 +284,5 @@ while spin_counter < total_run:
 
 
   
-notification(spin_counter)    
+notification(total_run)    
 time.sleep(1)
