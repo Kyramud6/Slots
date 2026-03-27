@@ -1,0 +1,18 @@
+# Ignore all Python scripts to keep logic private
+*.py
+
+# Ignore Python environment and cache
+__pycache__/
+*.pyc
+.env
+venv/
+.venv/
+
+# Ignore local images used for PyAutoGUI matching
+*.png
+*.jpg
+*.jpeg
+
+# Ignore Tesseract log files or temp screenshots
+*.log
+screenshots/
